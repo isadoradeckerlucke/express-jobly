@@ -8,7 +8,7 @@ class Company {
         let whereExpressions = [];
         let queryValues = [];
 
-        // in solutions they have +data.min_employees and +data.max_employees etc. for all these, console.log to figure out what this does
+        //the + converts it from a string 
         if (+data.min_employees >= +data.max_employees){
             throw new ExpressError('min employees must be less than max employees', 400)
         }
@@ -34,11 +34,16 @@ class Company {
         }
 
         let finalQuery = baseQuery + whereExpressions.join(' AND ') + ' ORDER BY name';
+
         const companiesRes = await db.query(finalQuery, queryValues)
+
+        if (companiesRes.rows.length === 0){
+            throw new ExpressError('no companies match your search terms', 400)
+        }
         return companiesRes.rows
-
-
-
-
     }
 }
+
+// example query url: http://localhost:3000/companies/?search=aple&min_employees=20&max_employees=3000
+
+module.exports = Company;
