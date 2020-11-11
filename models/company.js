@@ -42,6 +42,58 @@ class Company {
         }
         return companiesRes.rows
     }
+
+    static async createNew(data) {
+        const checkForDoubles = await db.query(
+            `SELECT handle FROM companies WHERE handle = $1`, 
+            [data.handle]
+        );
+
+        if (checkForDoubles.rows[0]) {
+            throw new ExpressError(`company with handle ${data.handle} already exists`, 400)
+        }
+        
+        const newCompany = await db.query(
+            `INSERT INTO companies (handle, name, num_employees, description, logo_url)
+            VALUES($1, $2, $3, $4, $5)
+            RETURNING handle, name, num_employees, description, logo_url`, 
+            [data.handle, data.name, data.num_employees, data.description, data.logo_url])
+            
+            return newCompany.rows[0]
+    }
+
+    static async findByHandle(handle) {
+        const company = await db.query(
+            `SELECT * FROM companies WHERE handle = $1`,
+            [handle]
+        )
+        return company.rows[0]
+    }
+
+    static async update(handle, data) {
+        const {query, values} = sqlForPartialUpdate('companies', data, 'handle', handle);
+
+        const result = await db.query(query, values)
+        const company = result.rows[0]
+
+        if (!company){
+            throw new ExpressError(`there is no company with handle ${handle}`, 404)
+        }
+
+        return company;
+    }
+
+    static async delete(handle) {
+        const deletedCompany = await db.query(
+            `DELETE FROM companies WHERE handle = $1 RETURNING handle`,
+            [handle]
+        )
+
+        if (deletedCompany.rows.length === 0) {
+            throw new ExpressError(`there is no company with handle ${handle}`, 404)
+        }
+        
+    }
 }
 
 // example query url: http://localhost:3000/companies/?search=aple&min_employees=20&max_employees=3000
