@@ -4,6 +4,8 @@ const express = require("express");
 
 const ExpressError = require("./helpers/expressError");
 
+const companiesRoutes = require('./routes/companies');
+
 const morgan = require("morgan");
 
 const app = express();
