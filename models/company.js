@@ -37,9 +37,9 @@ class Company {
 
         const companiesRes = await db.query(finalQuery, queryValues)
 
-        if (companiesRes.rows.length === 0){
-            throw new ExpressError('no companies match your search terms', 400)
-        }
+        // if (companiesRes.rows.length === 0){
+        //     throw new ExpressError('no companies match your search terms', 400)
+        // }
         return companiesRes.rows
     }
 
@@ -67,6 +67,10 @@ class Company {
             `SELECT * FROM companies WHERE handle = $1`,
             [handle]
         )
+
+        if (!company.rows[0]){
+            throw new ExpressError(`there is no company with handle ${handle}`, 404)
+        }
         return company.rows[0]
     }
 
