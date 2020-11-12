@@ -63,15 +63,23 @@ class Company {
     }
 
     static async findByHandle(handle) {
-        const company = await db.query(
+        const companyRes = await db.query(
             `SELECT * FROM companies WHERE handle = $1`,
             [handle]
         )
 
-        if (!company.rows[0]){
+        if (!companyRes.rows[0]){
             throw new ExpressError(`there is no company with handle ${handle}`, 404)
         }
-        return company.rows[0]
+
+        const jobs = await db.query(
+            `SELECT * FROM jobs WHERE company_handle = $1`,
+            [handle]
+        )
+        const company = companyRes.rows[0]
+        company.jobs = jobs.rows;
+
+        return company;
     }
 
     static async update(handle, data) {
@@ -95,9 +103,9 @@ class Company {
 
         if (deletedCompany.rows.length === 0) {
             throw new ExpressError(`there is no company with handle ${handle}`, 404)
-        }
-        
+        }   
     }
+
 }
 
 // example query url: http://localhost:3000/companies/?search=aple&min_employees=20&max_employees=3000
