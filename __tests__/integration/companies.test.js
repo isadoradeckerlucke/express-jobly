@@ -1,3 +1,5 @@
+process.env.NODE_ENV === "test"
+
 const request = require('supertest')
 const app = require("../../app");
 const db = require('../../db');
@@ -13,8 +15,7 @@ beforeEach(async function() {
     await beforeEachHook(TEST_DATA);
 })
 
-describe("GET /companies", function(){
-    
+describe("GET /companies", function(){    
     test("shows all companies", async function(){
         const response = await request(app).get('/companies');
 
@@ -76,6 +77,7 @@ describe('GET /companies/:handle', function(){
     test('gets a company by handle', async function(){
         const response = await request(app).get('/companies/testhandle')
 
+        console.log(response.body, '********i am response.body from companies get route ********')
         expect(response.statusCode).toBe(200)
         expect(response.body.company).toHaveProperty('handle')
         expect(response.body.company.num_employees).toBe(47)

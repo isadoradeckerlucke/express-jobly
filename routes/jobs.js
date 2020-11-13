@@ -25,7 +25,6 @@ router.post('/', async function(req, res, next){
         }
         const job = await Job.createNew(req.body);
         return res.json({job})
-
     } catch(err){
         return next(err)
     }
@@ -45,10 +44,12 @@ router.patch('/:id', async function(req, res, next){
         if ('id' in req.body){
             throw new ExpressError('you can not update a job id', 400)
         }
+
         const validation = validate(req.body, jobPatchSchema)
         if (!validation.valid){
             throw new ExpressError(validation.errors.map(e=>e.stack), 400)
         }
+        
         const job = await Job.update(req.params.id, req.body)
         return res.json({job})    
     } catch(err) {

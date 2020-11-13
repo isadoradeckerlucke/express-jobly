@@ -14,7 +14,6 @@ class Job {
             whereExpressions.push(`salary >= $${queryValues.length}`)
         }
 
-        
         if (data.min_equity){
             queryValues.push(+data.min_equity);
             whereExpressions.push(`equity >= $${queryValues.length}`)
@@ -30,12 +29,9 @@ class Job {
         }
 
         let finalQuery = baseQuery + whereExpressions.join(' AND ') + ' ORDER BY title';
-
+        console.log(finalQuery, queryValues, 'i am final query and query values from job.js')
         const jobs = await db.query(finalQuery, queryValues)
 
-        // if (jobs.rows.length === 0){
-        //     throw new ExpressError('no jobs match your search terms', 400)
-        // }
         return jobs.rows
     }    
     
@@ -55,7 +51,7 @@ class Job {
         )
         
         if (!checkCompanyExists.rows[0]){
-            throw new ExpressError(`there is no company in the system with handle ${data.company_handle}`)
+            throw new ExpressError(`there is no company in the system with handle ${data.company_handle}`, 400)
         }
 
         const job = await db.query(
@@ -85,6 +81,8 @@ class Job {
         const result = await db.query(query, values)
         const job = result.rows[0]
 
+        console.log(job, 'i am job from update funciton in job.js')
+
         if (!job){
             throw new ExpressError(`there is no job with id ${id}`, 404)
         }
@@ -92,12 +90,17 @@ class Job {
     }
 
     static async delete(id) {
+        // const checkJobExists = await db.query(
+        //     `SELECT title FROM jobs WHERE id = $1 RE`
+        // )
+
         const deletedJob = await db.query(
             `DELETE FROM jobs WHERE id = $1 RETURNING id`,
             [id]
         )
+        console.log(deletedJob, 'i am deleted job from job.js')
 
-        if (deletedJob.rows.length === 0) {
+        if (deletedJob.rowCount === 0) {
             throw new ExpressError(`there is no job with id ${id}`, 404)
         }   
     }
