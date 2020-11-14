@@ -6,6 +6,8 @@ const ExpressError = require("./helpers/expressError");
 
 const companiesRoutes = require('./routes/companies');
 const jobsRoutes = require('./routes/jobs');
+const usersRoutes = require('./routes/users');
+const loginRoute = require('./routes/login');
 
 const morgan = require("morgan");
 
@@ -18,6 +20,8 @@ app.use(morgan("tiny"));
 
 app.use('/companies', companiesRoutes);
 app.use('/jobs', jobsRoutes);
+app.use('/users', usersRoutes);
+app.use('/login', loginRoute);
 
 /** 404 handler */
 

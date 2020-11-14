@@ -1,4 +1,3 @@
-const { response } = require("express");
 const db = require("../db");
 const ExpressError = require("../helpers/ExpressError");
 const sqlForPartialUpdate = require("../helpers/partialUpdate");
@@ -29,7 +28,6 @@ class Job {
         }
 
         let finalQuery = baseQuery + whereExpressions.join(' AND ') + ' ORDER BY title';
-        console.log(finalQuery, queryValues, 'i am final query and query values from job.js')
         const jobs = await db.query(finalQuery, queryValues)
 
         return jobs.rows
@@ -72,7 +70,17 @@ class Job {
         if (!job.rows[0]){
             throw new ExpressError(`there is no job with id ${id}`, 404)
         }
-        return job.rows[0]
+
+        const company = await db.query(
+            `SELECT name, num_employees, description, logo_url
+            FROM companies
+            WHERE handle = $1`,
+            [job.rows[0].company_handle]
+        )
+
+        job.rows[0].company = company.rows[0];
+
+        return job.rows[0];
     }
 
     static async update(id, data) {
@@ -81,7 +89,6 @@ class Job {
         const result = await db.query(query, values)
         const job = result.rows[0]
 
-        console.log(job, 'i am job from update funciton in job.js')
 
         if (!job){
             throw new ExpressError(`there is no job with id ${id}`, 404)
@@ -90,15 +97,10 @@ class Job {
     }
 
     static async delete(id) {
-        // const checkJobExists = await db.query(
-        //     `SELECT title FROM jobs WHERE id = $1 RE`
-        // )
-
         const deletedJob = await db.query(
             `DELETE FROM jobs WHERE id = $1 RETURNING id`,
             [id]
         )
-        console.log(deletedJob, 'i am deleted job from job.js')
 
         if (deletedJob.rowCount === 0) {
             throw new ExpressError(`there is no job with id ${id}`, 404)

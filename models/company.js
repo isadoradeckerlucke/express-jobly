@@ -97,7 +97,9 @@ class Company {
 
     static async delete(handle) {
         const deletedCompany = await db.query(
-            `DELETE FROM companies WHERE handle = $1 RETURNING handle`,
+            `DELETE FROM companies 
+            WHERE handle = $1 
+            RETURNING handle`,
             [handle]
         )
 
@@ -105,9 +107,7 @@ class Company {
             throw new ExpressError(`there is no company with handle ${handle}`, 404)
         }   
     }
-
 }
-
 // example query url: http://localhost:3000/companies/?search=aple&min_employees=20&max_employees=3000
 
 module.exports = Company;

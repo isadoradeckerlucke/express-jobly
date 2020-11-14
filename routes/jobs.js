@@ -1,14 +1,14 @@
 const express = require('express');
 const ExpressError = require('../helpers/ExpressError');
-// const { authRequired, adminRequired } = require('../middleware/auth');
+const { authRequired, adminRequired } = require('../middleware/auth');
 const Job = require('../models/Job');
 const { validate } = require('jsonschema');
 const jobPostSchema = require('../schemas/jobPostSchema.json')
 const jobPatchSchema = require('../schemas/jobPatchSchema.json')
 
-const router = new express.Router();
+const router = express.Router({mergeParams: true});
 
-router.get('/', async function(req, res, next){
+router.get('/', authRequired, async function(req, res, next){
     try{
         const jobs = await Job.findAll(req.query);
         return res.json({jobs})
@@ -17,7 +17,7 @@ router.get('/', async function(req, res, next){
     }
 })
 
-router.post('/', async function(req, res, next){
+router.post('/', adminRequired, async function(req, res, next){
     try {
         const validation = validate(req.body, jobPostSchema)
         if (!validation.valid){
@@ -30,7 +30,7 @@ router.post('/', async function(req, res, next){
     }
 })
 
-router.get('/:id', async function(req, res, next){
+router.get('/:id', authRequired, async function(req, res, next){
     try {
         const job = await Job.findById(req.params.id);
         return res.json({job})
@@ -39,7 +39,7 @@ router.get('/:id', async function(req, res, next){
     }
 })
 
-router.patch('/:id', async function(req, res, next){
+router.patch('/:id', adminRequired, async function(req, res, next){
     try {
         if ('id' in req.body){
             throw new ExpressError('you can not update a job id', 400)
@@ -57,7 +57,7 @@ router.patch('/:id', async function(req, res, next){
     }
 })
 
-router.delete('/:id', async function(req, res, next){
+router.delete('/:id', adminRequired, async function(req, res, next){
     try{
         await Job.delete(req.params.id)
         return res.json({'message': `job with id ${req.params.id} deleted`})

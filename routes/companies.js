@@ -1,6 +1,6 @@
 const express = require('express');
 const ExpressError = require('../helpers/ExpressError');
-// const { authRequired, adminRequired } = require('../middleware/auth');
+const { authRequired, adminRequired } = require('../middleware/auth');
 const Company = require('../models/Company');
 const { validate } = require('jsonschema');
 const companyPostSchema = require('../schemas/companyPostSchema.json')
@@ -8,7 +8,7 @@ const companyPatchSchema = require('../schemas/companyPatchSchema.json')
 
 const router = new express.Router();
 
-router.get('/', async function(req, res, next){
+router.get('/', authRequired, async function(req, res, next){
     try{
         const companies = await Company.findAll(req.query);
         return res.json({companies})
@@ -17,7 +17,7 @@ router.get('/', async function(req, res, next){
     }
 })
 
-router.post('/', async function(req, res, next){
+router.post('/', adminRequired, async function(req, res, next){
     try {
         const validation = validate(req.body, companyPostSchema)
         if (!validation.valid){
@@ -30,7 +30,7 @@ router.post('/', async function(req, res, next){
     }
 })
 
-router.get('/:handle', async function(req, res, next){
+router.get('/:handle', adminRequired, async function(req, res, next){
     try {
         const company = await Company.findByHandle(req.params.handle);
         return res.json({company})
@@ -39,7 +39,7 @@ router.get('/:handle', async function(req, res, next){
     }
 })
 
-router.patch('/:handle', async function(req, res, next){
+router.patch('/:handle', adminRequired, async function(req, res, next){
     try {
         if ('handle' in req.body){
             throw new ExpressError('you can not update a company handle', 400)
@@ -55,7 +55,7 @@ router.patch('/:handle', async function(req, res, next){
     }
 })
 
-router.delete('/:handle', async function(req, res, next){
+router.delete('/:handle', adminRequired, async function(req, res, next){
     try{
         await Company.delete(req.params.handle)
         return res.json({'message': `company with handle ${req.params.handle} deleted`})
