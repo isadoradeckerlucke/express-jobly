@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt')
 const ExpressError = require("../helpers/ExpressError");
 const sqlForPartialUpdate = require("../helpers/partialUpdate");
 
-const BCRYPT_WORK_FACTOR = 10;
+const BCRYPT_WORK_FACTOR = 12;
 
 class User{
     static async authenticate(data){

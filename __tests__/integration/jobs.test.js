@@ -2,16 +2,46 @@ process.env.NODE_ENV === "test"
 
 const request = require('supertest')
 const app = require("../../app");
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
+const db = require('../../db')
 
-const {
-    TEST_DATA,
-    afterEachHook,
-    beforeEachHook,
-    afterAllHook
-} = require('./config')
 
+const TEST_DATA = {};
 beforeEach(async function() {
-    await beforeEachHook(TEST_DATA);
+    try {
+        await request(app)
+            .post('/users')
+            .send({
+                username: 'testuser',
+                password: 'password',
+                first_name: 'test',
+                last_name: 'testtest',
+                email: 'test@gmail.com',
+                photo_url: 'tester.com',
+                is_admin: true
+            })
+
+        const response = await request(app)
+            .post('/login')
+            .send({
+                username: 'testuser',
+                password: 'password'
+            })
+
+        TEST_DATA.userToken = response.body.token;
+        TEST_DATA.currentUsername = jwt.decode(TEST_DATA.userToken).username
+
+        const newJob = await db.query(
+            `INSERT INTO jobs (title, salary, equity, company_handle, id)
+            VALUES($1, $2, $3, $4, $5)
+            RETURNING *`, 
+            ['test engineer', 100000, 0.4, TEST_DATA.currentCompany.handle, 1]
+        )
+        TEST_DATA.jobId = newJob.rows[0].id;
+    }catch(err){
+        console.error(err)
+    }
 })
 
 describe("GET /jobs", function(){    
@@ -175,11 +205,19 @@ describe('DELETE /jobs/:id', function(){
 
 
 afterEach(async function() {
-    await afterEachHook();
-})
+    try {
+        await db.query('DELETE FROM jobs')
+        await db.query('DELETE FROM users')
+    } catch(err){
+        console.error(err)
+    }})
 
 afterAll(async function() {
-    await afterAllHook();
+    try {
+        await db.end()
+    } catch(err){
+        console.error(err)
+    }
 })
 
 

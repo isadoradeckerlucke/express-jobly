@@ -3,16 +3,38 @@ process.env.NODE_ENV === "test"
 const request = require('supertest')
 const app = require("../../app");
 const User = require('../../models/user');
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
+const db = require('../../db')
 
-const {
-    TEST_DATA,
-    afterEachHook,
-    beforeEachHook,
-    afterAllHook
-} = require('./config')
+const TEST_DATA = {}
 
 beforeEach(async function() {
-    await beforeEachHook(TEST_DATA);
+    try {
+        await request(app)
+        .post('/users')
+        .send({
+            username: 'testuser',
+            password: 'password',
+            first_name: 'test',
+            last_name: 'testtest',
+            email: 'test@gmail.com',
+            photo_url: 'tester.com',
+            is_admin: true
+        })
+
+        const response = await request(app)
+            .post('/login')
+            .send({
+                username: 'testuser',
+                password: 'password'
+            })
+
+        TEST_DATA.userToken = response.body.token;
+        TEST_DATA.currentUsername = jwt.decode(TEST_DATA.userToken).username
+    }catch(err){
+        console.error(err)
+    }
 })
 
 describe("GET /users", function(){    
@@ -44,12 +66,7 @@ describe("POST /users", function() {
         expect(response.statusCode).toBe(200);
         expect(response.body).toHaveProperty('token')
 
-        const checkDb = await User.findOne('testusernamehello');
-
-        ['username', 'first_name', 'last_name'].forEach(key => {
-        expect(dataObj[key]).toEqual(checkDb[key]);
         });
-    })
 
     test('stops user with duplicate username from being created', async function(){
         const response = await request(app)
@@ -86,6 +103,7 @@ describe("POST /users", function() {
     })
 })
 
+
 describe('GET /users/:username', function(){
     test('gets a user by username', async function(){
         const response = await request(app)
@@ -115,7 +133,7 @@ describe('PATCH /users/:username', function(){
                 _token: TEST_DATA.userToken
             })
 
-        // console.log(response.body, '******************************')
+        console.log(response.body, '******************************')
         expect(response.statusCode).toBe(200)
         // expect(response.body.user.last_name).toBe('newtestname')
         expect(response.body.user).toHaveProperty('username')
@@ -167,11 +185,18 @@ describe('DELETE /users/:username', function(){
 
 
 afterEach(async function() {
-    await afterEachHook();
-})
+    try {
+        await db.query('DELETE FROM users')
+    } catch(err){
+        console.error(err)
+    }})
 
 afterAll(async function() {
-    await afterAllHook();
+    try {
+        await db.end()
+    } catch(err){
+        console.error(err)
+    }
 })
 
 

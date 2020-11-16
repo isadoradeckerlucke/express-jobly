@@ -2,16 +2,50 @@ process.env.NODE_ENV === "test"
 
 const request = require('supertest')
 const app = require("../../app");
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
+const db = require('../../db')
 
-const {
-    TEST_DATA,
-    afterEachHook,
-    beforeEachHook,
-    afterAllHook
-} = require('./config')
 
+const TEST_DATA = {}
 beforeEach(async function() {
-    await beforeEachHook(TEST_DATA);
+    try {
+        const hashedPassword = await bcrypt.hash('password', 12)
+        await request(app)
+            .post('/users')
+            .send({
+                username: 'testuser',
+                password: 'password',
+                first_name: 'test',
+                last_name: 'testtest',
+                email: 'test@gmail.com',
+                photo_url: 'tester.com',
+                is_admin: true
+            })
+
+        const response = await request(app)
+            .post('/login')
+            .send({
+                username: 'testuser',
+                password: hashedPassword
+            })
+
+        TEST_DATA.userToken = response.body.token;
+        TEST_DATA.currentUsername = jwt.decode(TEST_DATA.userToken).username
+
+
+        const newCompany = await db.query(
+            `INSERT INTO companies (handle, name, num_employees, description, logo_url)
+            VALUES($1, $2, $3, $4, $5) 
+            RETURNING *`, 
+            ['testhandle', 'testcompanyname', 47, 'this is a test company', 'https://www.google.com/']
+        )
+
+        TEST_DATA.currentCompany = newCompany.rows[0]
+        
+    } catch(err){
+        console.error(err)
+    }
 })
 
 describe("GET /companies", function(){    
@@ -174,11 +208,19 @@ describe('DELETE /companies/:handle', function(){
 
 
 afterEach(async function() {
-    await afterEachHook();
+    try {
+        await db.query('DELETE FROM companies')
+        await db.query('DELETE FROM users')
+    } catch(err){
+        console.error(err)
+    }
 })
 
 afterAll(async function() {
-    await afterAllHook();
-})
+    try {
+        await db.end()
+    } catch(err){
+        console.error(err)
+    }})
 
 
