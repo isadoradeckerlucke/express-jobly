@@ -32,13 +32,30 @@ beforeEach(async function() {
         TEST_DATA.userToken = response.body.token;
         TEST_DATA.currentUsername = jwt.decode(TEST_DATA.userToken).username
 
-        const newJob = await db.query(
-            `INSERT INTO jobs (title, salary, equity, company_handle, id)
-            VALUES($1, $2, $3, $4, $5)
-            RETURNING *`, 
-            ['test engineer', 100000, 0.4, TEST_DATA.currentCompany.handle, 1]
-        )
-        TEST_DATA.jobId = newJob.rows[0].id;
+        const newCompany = await request(app)
+            .post('/companies')
+            .send({
+                handle: 'testhandle',
+                name: 'testcompanyname',
+                num_employees: 47,
+                description: 'this is a test company',
+                logo_url: 'https://www.google.com/',
+                _token: TEST_DATA.userToken
+            })
+        TEST_DATA.currentCompany = newCompany.body.newCompany
+
+        const newJob = await request(app)
+            .post('/jobs')
+            .send({
+                title: 'test engineer', 
+                salary: 100000, 
+                equity: 0.4, 
+                company_handle: TEST_DATA.currentCompany.handle, 
+                id: 1,
+                _token: TEST_DATA.userToken
+            })
+        TEST_DATA.jobId = newJob.body.job.id;
+
     }catch(err){
         console.error(err)
     }
@@ -46,7 +63,11 @@ beforeEach(async function() {
 
 describe("GET /jobs", function(){    
     test("shows all jobs", async function(){
-        const response = await request(app).get('/jobs');
+        const response = await request(app)
+            .get('/jobs')
+            .send({
+                _token: TEST_DATA.userToken
+            })
 
         expect(response.body.jobs).toHaveLength(1);
         expect(response.body.jobs[0]).toHaveProperty('title');
@@ -66,11 +87,17 @@ describe("GET /jobs", function(){
             .post('/jobs')
             .send({
                 title: 'vet tech', 
-                salary: 60000, equity: .2, 
+                salary: 60000, 
+                equity: .2, 
                 company_handle: TEST_DATA.currentCompany.handle,
                 _token: TEST_DATA.userToken})
-                
-        const res = await request(app).get('/jobs/?search=vet')
+        const res = await request(app)
+            .get('/jobs/?search=vet')
+            .send({
+                _token: TEST_DATA.userToken
+            })
+        
+        console.log(res.body,'i am res.body in job filter test')
 
         expect(res.body.jobs).toHaveLength(2)
         expect(res.body.jobs[0]).toHaveProperty('title')
@@ -99,7 +126,7 @@ describe("POST /jobs", function() {
         const response = await request(app)
             .post('/jobs')
             .send({
-                id: 1,
+                id: TEST_DATA.jobId,
                 title: 'duplicate test job',
                 salary: 80000,
                 equity: .1,
@@ -108,7 +135,7 @@ describe("POST /jobs", function() {
             })
         
         expect(response.statusCode).toBe(400)
-        expect(response.body.message).toBe('job with id 1 already exists')
+        expect(response.body).toHaveProperty('message')
     })
 
     test('stops job from being created if company does not exist', async function(){
@@ -191,7 +218,7 @@ describe('DELETE /jobs/:id', function(){
             .delete(`/jobs/${TEST_DATA.jobId}`)
             .send({ _token: TEST_DATA.userToken })
         expect(response.statusCode).toBe(200)
-        expect(response.body.message).toBe('job with id 1 deleted')
+        expect(response.body).toHaveProperty('message')
     })
 
     test('throws error for fake id', async function(){
@@ -208,6 +235,7 @@ afterEach(async function() {
     try {
         await db.query('DELETE FROM jobs')
         await db.query('DELETE FROM users')
+        await db.query('DELETE FROM companies')
     } catch(err){
         console.error(err)
     }})

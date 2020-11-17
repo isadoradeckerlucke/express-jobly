@@ -32,6 +32,7 @@ beforeEach(async function() {
 
         TEST_DATA.userToken = response.body.token;
         TEST_DATA.currentUsername = jwt.decode(TEST_DATA.userToken).username
+
     }catch(err){
         console.error(err)
     }
@@ -133,7 +134,6 @@ describe('PATCH /users/:username', function(){
                 _token: TEST_DATA.userToken
             })
 
-        console.log(response.body, '******************************')
         expect(response.statusCode).toBe(200)
         // expect(response.body.user.last_name).toBe('newtestname')
         expect(response.body.user).toHaveProperty('username')
@@ -148,7 +148,7 @@ describe('PATCH /users/:username', function(){
                 _token: TEST_DATA.userToken
             })
 
-        expect(response.statusCode).toBe(404)
+        expect(response.statusCode).toBe(401)
     })
 })
 
@@ -170,17 +170,6 @@ describe('DELETE /users/:username', function(){
           .send({ _token: TEST_DATA.userToken });
         expect(response.statusCode).toBe(401);
     });
-    
-
-    test('throws error for fake username', async function(){
-        const response = await request(app)
-            .delete('/users/anotherfakeusername')
-            .send({
-                _token: TEST_DATA.userToken
-            })
-
-        expect(response.statusCode).toBe(404)
-    })
 })
 
 

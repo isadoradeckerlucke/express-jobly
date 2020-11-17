@@ -41,23 +41,24 @@ function adminRequired(req, res, next){
 // middleware to check for valid token as well as make sure that the current user is the same one in the route
 // add username onto req for view functions
 // if not valid, raises unauthorized error
-function ensureCorrectUser(req, res, next){
-    try{
-        const tokenString = req.body.token;
-        let token = jwt.verify(tokenString, SECRET_KEY);
-        res.locals.username = token.username;
-
-        if (token.username === req.params.username){
-            return next()
-        }
-
-        // throw an error if it's not the same user so that it catches it below
-        throw new Error()
-    } catch(err){
-        return next(new ExpressError('unauthorized', 401))
+function ensureCorrectUser(req, res, next) {
+    try {
+      const tokenStr = req.body._token;
+  
+      let token = jwt.verify(tokenStr, SECRET_KEY);
+      res.locals.username = token.username;
+  
+      if (token.username === req.params.username) {
+        return next();
+      }
+  
+      // throw an error, so we catch it in our catch, below
+      throw new Error();
+    } catch (err) {
+      return next(new ExpressError("Unauthorized", 401));
     }
-}
-
+  }
+  
 module.exports = {
     authRequired,
     adminRequired,

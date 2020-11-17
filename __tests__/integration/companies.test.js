@@ -4,13 +4,13 @@ const request = require('supertest')
 const app = require("../../app");
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcrypt')
-const db = require('../../db')
+const db = require('../../db');
+const { TestScheduler } = require('jest');
 
 
 const TEST_DATA = {}
 beforeEach(async function() {
     try {
-        const hashedPassword = await bcrypt.hash('password', 12)
         await request(app)
             .post('/users')
             .send({
@@ -27,22 +27,26 @@ beforeEach(async function() {
             .post('/login')
             .send({
                 username: 'testuser',
-                password: hashedPassword
+                password: 'password'
             })
 
         TEST_DATA.userToken = response.body.token;
         TEST_DATA.currentUsername = jwt.decode(TEST_DATA.userToken).username
 
 
-        const newCompany = await db.query(
-            `INSERT INTO companies (handle, name, num_employees, description, logo_url)
-            VALUES($1, $2, $3, $4, $5) 
-            RETURNING *`, 
-            ['testhandle', 'testcompanyname', 47, 'this is a test company', 'https://www.google.com/']
-        )
+        const newCompany = await request(app)
+            .post('/companies')
+            .send({
+                handle: 'testhandle',
+                name: 'testcompanyname',
+                num_employees: 47,
+                description: 'this is a test company',
+                logo_url: 'https://www.google.com/',
+                _token: TEST_DATA.userToken
+            })
 
-        TEST_DATA.currentCompany = newCompany.rows[0]
-        
+
+        TEST_DATA.currentCompany = newCompany.body.newCompany
     } catch(err){
         console.error(err)
     }
@@ -50,7 +54,11 @@ beforeEach(async function() {
 
 describe("GET /companies", function(){    
     test("shows all companies", async function(){
-        const response = await request(app).get('/companies');
+        const response = await request(app)
+            .get('/companies')
+            .send({
+                _token: TEST_DATA.userToken
+            })
 
         expect(response.body.companies).toHaveLength(1);
         expect(response.body.companies[0]).toHaveProperty('handle');
@@ -200,7 +208,11 @@ describe('DELETE /companies/:handle', function(){
     })
 
     test('throws error for fake handle', async function(){
-        const response = await request(app).delete('/companies/fakehandle')
+        const response = await request(app)
+            .delete('/companies/fakehandle')
+            .send({
+                _token: TEST_DATA.userToken
+            })
 
         expect(response.statusCode).toBe(404)
     })
